@@ -1,1 +1,801 @@
+/* Hallmark · shape: app screen · genre: playful · theme: Hum (deal 1/3) · redesign: full · posture: full-palette · nav: top bar · signature: ruled checklist with live completion · states: loading, empty, error, full · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S4 R5 V4 · weakest: specificity, addressed by making the task checkbox and real completion count the focal points. */
+/* Hallmark · finish-review: subagent · ship · preference noted: a smoother paper keeps the task rows visually quiet. */
 @import "tailwindcss";
+@import "./tokens.css";
+@import "./planner-public.css";
+
+html,
+body {
+  overflow-x: clip;
+  scrollbar-color: var(--color-control) var(--color-paper);
+}
+
+:where(a, button, input, textarea, select, summary):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.planner {
+  --gutter: 1.25rem;
+  display: flow-root;
+  min-block-size: 100svh;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-planner);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.planner ::selection {
+  background-color: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.planner-wrap {
+  width: min(calc(100% - 2 * var(--gutter)), var(--planner-width));
+  margin-inline: auto;
+}
+
+.planner-header {
+  border-block-end: 1px solid var(--color-rule);
+  background-color: var(--color-card);
+}
+
+.planner-header-inner {
+  display: flex;
+  min-block-size: 4.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.planner-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-block-size: 44px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.planner-brand img {
+  flex: none;
+  border-radius: 0.5rem;
+}
+
+.planner-title {
+  min-width: 0;
+  color: var(--color-ink);
+  font-size: var(--planner-display);
+  font-weight: 700;
+  line-height: 1.22;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.planner-muted,
+.planner-greeting {
+  color: var(--color-muted);
+}
+
+.planner-button,
+.planner-icon-button,
+.planner-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-block-size: 44px;
+  border: 1px solid var(--color-clear);
+  border-radius: var(--planner-control);
+  padding-inline: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--planner-duration), transform var(--planner-duration);
+}
+
+.planner svg {
+  flex: none;
+}
+
+.planner-button:active,
+.planner-icon-button:active {
+  transform: translateY(1px);
+}
+
+.planner :is(button, input, fieldset):disabled,
+.planner [aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.planner-primary {
+  border-color: var(--color-accent-edge);
+  background-color: var(--color-accent);
+  box-shadow: var(--planner-stock-shadow);
+  color: var(--color-accent-ink);
+}
+
+.planner-primary:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+
+.planner-secondary {
+  border-color: var(--color-control);
+  background-color: var(--color-card);
+}
+
+:is(.planner-secondary, .planner-quiet, .planner-icon-button, .planner-back):hover {
+  background-color: var(--color-paper-2);
+}
+
+.planner-quiet,
+.planner-back {
+  padding-inline: 0.6rem;
+  color: var(--color-muted);
+  font-size: var(--planner-small);
+}
+
+.planner-back {
+  align-self: flex-start;
+  margin-inline-start: -0.6rem;
+  color: var(--color-link);
+}
+
+.planner-icon-button {
+  min-inline-size: 44px;
+  padding-inline: 0;
+  color: var(--color-muted);
+}
+
+.planner-danger,
+.planner-delete {
+  color: var(--color-error);
+}
+
+.planner-danger:hover,
+.planner-delete {
+  background-color: var(--color-error-wash);
+}
+
+.planner-delete:hover {
+  border-color: var(--color-error);
+}
+
+.planner-workspace {
+  padding-block: 2.75rem 4rem;
+}
+
+.planner-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+  align-items: center;
+  gap: 1.5rem;
+  min-block-size: 9.25rem;
+  margin-block-end: 2rem;
+  border-block-end: 1px solid var(--color-rule);
+  padding-block-end: 1.75rem;
+}
+
+.planner-greeting {
+  margin-block-start: 0.65rem;
+  overflow-wrap: anywhere;
+}
+
+.planner-progress {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid var(--color-pollen-rule);
+  border-radius: var(--planner-sheet);
+  background-color: var(--color-pollen);
+  padding: 0.85rem 1.25rem 1.1rem;
+  font-size: var(--planner-small);
+}
+
+.planner-progress p {
+  display: flex;
+  align-items: baseline;
+  column-gap: 0.45rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.planner-progress strong {
+  font-size: var(--planner-title);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.planner-progress progress {
+  display: block;
+  inline-size: 100%;
+  block-size: 0.5rem;
+  margin-block-start: 0.4rem;
+  appearance: none;
+  border: 0;
+  border-radius: var(--planner-pill);
+  overflow: clip;
+  background-color: var(--color-pollen-rule);
+}
+
+.planner-progress progress::-webkit-progress-bar {
+  background-color: var(--color-pollen-rule);
+}
+
+.planner-progress progress::-webkit-progress-value {
+  border-radius: var(--planner-pill);
+  background-color: var(--color-success);
+}
+
+.planner-progress progress::-moz-progress-bar {
+  border-radius: var(--planner-pill);
+  background-color: var(--color-success);
+}
+
+.planner-list-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+}
+
+.planner-list-head h2,
+.planner-dialog h2 {
+  font-size: var(--planner-section);
+  font-weight: 600;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.planner-task-list,
+.planner-list-state,
+.planner-loading,
+.planner-editor-form,
+.planner-login {
+  border: 1px solid var(--color-rule);
+  border-radius: var(--planner-sheet);
+  background-color: var(--color-card);
+  box-shadow: var(--planner-sheet-shadow);
+}
+
+.planner-task-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  gap: 0.75rem;
+  align-items: center;
+  min-block-size: 5.5rem;
+  padding: 0.85rem 1rem;
+}
+
+.planner-task-row + .planner-task-row {
+  border-block-start: 1px solid var(--color-rule);
+}
+
+.planner-task-check {
+  display: grid;
+  place-content: center;
+  inline-size: 44px;
+  block-size: 44px;
+  appearance: none;
+  border-radius: var(--planner-control);
+  cursor: pointer;
+}
+
+.planner-task-check::before {
+  content: "";
+  grid-area: 1 / 1;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: 1.5px solid var(--color-control);
+  border-radius: 0.42rem;
+  background-color: var(--color-card);
+}
+
+.planner-task-check::after {
+  content: "";
+  grid-area: 1 / 1;
+  place-self: center;
+  inline-size: 0.65rem;
+  block-size: 0.4rem;
+  border-block-end: 2px solid var(--color-success);
+  border-inline-start: 2px solid var(--color-success);
+  transform: translateY(-1px) rotate(-45deg);
+  opacity: 0;
+}
+
+.planner-task-check:hover:not([aria-disabled="true"])::before {
+  background-color: var(--color-paper-2);
+}
+
+.planner-task-check:checked::before {
+  border-color: var(--color-success);
+  background-color: var(--color-success-wash);
+}
+
+.planner-task-check:checked::after {
+  opacity: 1;
+}
+
+.planner-task-copy h3 {
+  font-size: var(--planner-label);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.planner-task-detail {
+  display: -webkit-box;
+  overflow: clip;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+.planner-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.65rem;
+  margin-block-start: 0.35rem;
+  color: var(--color-muted);
+  font-size: var(--planner-small);
+}
+
+.planner-task-meta span {
+  font-weight: 500;
+}
+
+.planner-task-row[data-completed="true"] .planner-task-meta span {
+  color: var(--color-success);
+}
+
+.planner-task-image {
+  grid-column: 3;
+  inline-size: 3.5rem;
+  block-size: 3.5rem;
+  border-radius: var(--planner-control);
+  object-fit: cover;
+}
+
+.planner-task-actions {
+  display: flex;
+  grid-column: 4;
+  gap: 0.15rem;
+}
+
+.planner-list-state,
+.planner-loading {
+  padding: 1.5rem;
+}
+
+.planner-list-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.planner-list-state h3 {
+  font-size: var(--planner-label);
+  font-weight: 600;
+}
+
+.planner-state-icon {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 2.5rem;
+  block-size: 2.5rem;
+  border-radius: var(--planner-control);
+  background-color: var(--color-pollen);
+}
+
+.planner-loading {
+  color: var(--color-muted);
+}
+
+.planner-loading div {
+  block-size: 2.5rem;
+  margin-block-start: 0.75rem;
+  border-radius: var(--planner-control);
+  background-color: var(--color-paper-2);
+}
+
+.planner-notice {
+  margin-block-end: 0.85rem;
+  border-radius: var(--planner-control);
+  background-color: var(--color-success-wash);
+  padding: 0.65rem 0.85rem;
+  color: var(--color-success);
+  overflow-wrap: anywhere;
+}
+
+.planner-notice-error {
+  background-color: var(--color-error-wash);
+  color: var(--color-error);
+}
+
+:is(.planner-list-state, .planner-form) .planner-notice {
+  margin-block-end: 0;
+}
+
+.planner-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(calc(100% - 2 * var(--gutter)), 26rem);
+  margin: auto;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--planner-sheet);
+  background-color: var(--color-card);
+  padding: 1.5rem;
+  color: var(--color-ink);
+}
+
+.planner-dialog::backdrop {
+  background-color: var(--color-overlay);
+}
+
+.planner-dialog p {
+  margin-block-start: 0.45rem;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+.planner-dialog-actions,
+.planner-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-block-start: 1.5rem;
+}
+
+.planner-login {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr);
+  width: min(calc(100% - 2 * var(--gutter)), 52rem);
+  margin-block: 4.5rem 3rem;
+}
+
+.planner-login-art {
+  display: grid;
+  place-items: center;
+  overflow: clip;
+  border-radius: var(--planner-sheet) 0 0 var(--planner-sheet);
+  background-color: var(--color-pollen);
+  padding: 2rem;
+}
+
+.planner-login-paper {
+  display: grid;
+  place-items: center;
+  width: min(100%, 14rem);
+  aspect-ratio: 0.94;
+  border: 1px solid var(--color-pollen-rule);
+  border-radius: var(--planner-sheet);
+  background:
+    repeating-linear-gradient(var(--color-clear) 0 22px, var(--color-rule) 22px 23px),
+    var(--color-card);
+  box-shadow: 7px 7px 0 var(--color-pollen-rule);
+  transform: rotate(-5deg);
+}
+
+.planner-login-paper img {
+  width: 68%;
+  height: auto;
+  border-radius: var(--planner-control);
+  transform: rotate(5deg);
+}
+
+.planner-login-panel {
+  min-width: 0;
+  padding: 2.25rem;
+}
+
+:is(.planner-login-panel, .planner-editor) .planner-title {
+  font-size: var(--planner-title);
+}
+
+.planner-login-panel > p {
+  margin-block-start: 0.6rem;
+}
+
+.planner-form,
+.planner-field {
+  display: grid;
+  gap: 1rem;
+}
+
+.planner-form {
+  margin-block: 1.5rem;
+}
+
+.planner-field {
+  align-content: start;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.planner-field label {
+  font-weight: 600;
+}
+
+.planner-field-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+
+.planner-field-label span,
+.planner-signup {
+  color: var(--color-muted);
+  font-size: var(--planner-small);
+}
+
+.planner-signup a,
+.planner-field-label a {
+  color: var(--color-link);
+  font-size: var(--planner-small);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.planner-field :is(input:not([type="file"]), textarea, select) {
+  width: 100%;
+  min-block-size: 44px;
+  border: 1px solid var(--color-control);
+  border-radius: var(--planner-control);
+  background-color: var(--color-card);
+  padding: 0.55rem 0.7rem;
+  color: var(--color-ink);
+  font-size: 1rem;
+  caret-color: var(--color-link);
+}
+
+.planner-field :is(input, textarea)::placeholder {
+  color: var(--color-muted);
+}
+
+.planner-field textarea {
+  resize: vertical;
+}
+
+.planner-password {
+  position: relative;
+}
+
+.planner-field .planner-password > input {
+  padding-inline-end: 3rem;
+}
+
+.planner-password input::-ms-reveal {
+  display: none;
+}
+
+.planner-password > input[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.planner-password-toggle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  border-radius: 0 var(--planner-control) var(--planner-control) 0;
+}
+
+.planner-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: min(calc(100% - 2 * var(--gutter)), 45rem);
+  padding-block: 2rem 4rem;
+}
+
+.planner-editor-form {
+  padding: 1.5rem;
+}
+
+.planner-editor-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 1rem 1.25rem;
+  min-width: 0;
+}
+
+.planner-editor-title {
+  grid-column: 1 / -1;
+}
+
+.planner-editor-image {
+  grid-column: 2;
+  grid-row: 2 / 4;
+}
+
+.planner-attachment {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  border: 1px dashed var(--color-control);
+  border-radius: var(--planner-control);
+  background-color: var(--color-paper);
+  padding: 0.85rem;
+}
+
+.planner-attachment-preview {
+  width: 6.5rem;
+  height: 6.5rem;
+  border-radius: var(--planner-control);
+  object-fit: cover;
+}
+
+.planner-file {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-inline-size: 100%;
+  min-block-size: 44px;
+  border-radius: var(--planner-control);
+  padding: 0.25rem 0.5rem;
+  color: var(--color-link);
+  overflow-wrap: anywhere;
+}
+
+.planner-file input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.planner-file:hover {
+  background-color: var(--color-paper-2);
+}
+
+.planner-file:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.planner-editor-form .planner-notice {
+  margin-block: 1rem 0;
+}
+
+.planner-editor-actions {
+  border-block-start: 1px solid var(--color-rule);
+  padding-block-start: 1.25rem;
+}
+
+@media (max-width: 42rem) {
+  .planner {
+    --gutter: 1rem;
+  }
+
+  .planner-title {
+    font-size: var(--planner-title);
+  }
+
+  .planner-workspace {
+    padding-block-start: 1.8rem;
+  }
+
+  .planner-overview {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.85rem;
+    min-block-size: auto;
+    margin-block-end: 1.25rem;
+    padding-block-end: 1.25rem;
+  }
+
+  .planner-greeting {
+    margin-block-start: 0.4rem;
+  }
+
+  .planner-progress {
+    padding: 0.75rem 1rem 0.95rem;
+  }
+
+  .planner-task-row {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 0.25rem;
+    padding: 0.75rem 0.4rem;
+  }
+
+  .planner-task-check,
+  .planner-task-actions {
+    align-self: start;
+  }
+
+  .planner-task-copy {
+    display: contents;
+  }
+
+  .planner-task-copy h3 {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .planner-task-actions {
+    grid-column: 3;
+    grid-row: 1;
+    gap: 0;
+  }
+
+  .planner-task-detail,
+  .planner-task-meta,
+  .planner-task-image {
+    grid-column: 2 / -1;
+  }
+
+  .planner-task-detail {
+    grid-row: 2;
+  }
+
+  .planner-task-meta {
+    grid-row: 3;
+    margin-block-start: 0;
+  }
+
+  .planner-task-image {
+    grid-row: 4;
+  }
+
+  .planner-login {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 27rem;
+    margin-block-start: 2rem;
+  }
+
+  .planner-login-art {
+    display: none;
+  }
+
+  .planner-login-panel {
+    border-block-start: 5px solid var(--color-accent);
+    border-radius: var(--planner-sheet);
+    padding: 1.5rem;
+  }
+
+  .planner-editor-form {
+    padding: 1rem;
+  }
+
+  .planner-editor-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .planner-editor-image {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planner-button,
+  .planner-icon-button {
+    transition: none;
+  }
+
+  .planner-button:active,
+  .planner-icon-button:active {
+    transform: none;
+  }
+}
+
+
+@media (forced-colors: active) {
+  .planner-task-check {
+    display: block;
+    appearance: auto;
+  }
+
+  .planner-task-check::before,
+  .planner-task-check::after {
+    content: none;
+  }
+}

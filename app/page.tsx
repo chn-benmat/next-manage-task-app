@@ -1,95 +1,83 @@
 "use client";
 
-import Image from "next/image";
-import Task from "../assets/task.png";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PlannerHeader, PlannerIcon } from "@/app/components/planner-ui";
+import { readTaskSession } from "@/lib/task-session";
+
+const exampleRows = [
+  { title: "ทำโครงร่างรายงาน", completed: true },
+  { title: "อ่านบทที่ 4", completed: false },
+  { title: "เตรียมสไลด์งานกลุ่ม", completed: false },
+];
 
 export default function HomePage() {
-  const [user, setUser] = useState<{ fullname: string } | null>(null);
+  const [user, setUser] = useState<ReturnType<typeof readTaskSession>>(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    setUser(readTaskSession());
   }, []);
 
-  const handleLogout = () => {
+  function logout() {
     localStorage.removeItem("user");
     setUser(null);
-  };
+  }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col justify-center items-center p-4 sm:p-8 font-sans relative overflow-hidden">
-      {/* Navbar / Auth state */}
-      <div className="absolute top-4 right-4 sm:top-8 sm:right-8 flex items-center gap-4 z-10 animate-fade-in-down">
+    <div className="planner planner-home">
+      <PlannerHeader>
         {user ? (
-          <div className="flex items-center gap-4 bg-white/70 backdrop-blur-md px-6 py-2.5 rounded-full shadow-sm border border-white/50 hover:shadow-md transition-shadow">
-            <span className="text-slate-700 font-medium hidden sm:inline-block">Hello, {user.fullname}</span>
-            <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-700 font-bold transition-colors">
-              Logout
-            </button>
-          </div>
+          <button className="planner-button planner-quiet" type="button" onClick={logout}>
+            <PlannerIcon name="logout" /> ออกจากระบบ
+          </button>
         ) : (
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-slate-600 hover:text-blue-600 font-bold px-4 py-2 transition-colors">
-              Log in
-            </Link>
-            <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-full shadow-md shadow-blue-500/20 transition-all hover:shadow-md hover:-translate-y-0.5 active:translate-y-0">
-              Sign up
-            </Link>
-          </div>
+          <nav className="planner-home-nav" aria-label="บัญชีผู้ใช้">
+            <Link href="/login" className="planner-button planner-quiet">เข้าสู่ระบบ</Link>
+            <Link href="/register" className="planner-button planner-secondary">สมัครสมาชิก</Link>
+          </nav>
         )}
-      </div>
-
-      <div className="max-w-3xl w-full flex flex-col items-center justify-center text-center animate-fade-in-up mt-12 sm:mt-0">
-        {/* Logo with Glow Effect */}
-        <div className="relative mb-8 group cursor-pointer">
-          <div className="absolute inset-0 bg-blue-400 blur-2xl opacity-20 group-hover:opacity-40 transition-opacity duration-500 rounded-full"></div>
-          <div className="relative bg-white p-6 rounded-3xl shadow-xl shadow-blue-900/5 border border-blue-50 transform group-hover:-translate-y-2 transition-transform duration-300">
-            <Image src={Task} alt="Task Logo" width={120} height={120} className="object-contain drop-shadow-md" priority />
+      </PlannerHeader>
+      <main className="planner-wrap">
+        <section className="planner-home-intro" aria-labelledby="home-heading">
+          <div className="planner-home-copy">
+            <h1 className="planner-title" id="home-heading">จัดการงานในที่เดียว</h1>
+            <p className="planner-muted">จดสิ่งที่ต้องทำ แนบรูป แล้วติ๊กเสร็จได้จากรายการ</p>
+            <Link href={user ? "/alltask" : "/login"} className="planner-button planner-primary">
+              {user ? "เปิดรายการงาน" : "เริ่มต้นใช้งาน"}
+            </Link>
           </div>
-        </div>
-        
-        {/* Headings */}
-        <h1 className="text-4xl sm:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-900 to-blue-600 tracking-tight mb-4">
-          Manage Task App
-        </h1>
-        <p className="text-xl sm:text-2xl font-medium text-slate-600 mb-10 max-w-xl">
-          บันทึกและจัดการงานที่ต้องทำของคุณได้อย่างมีประสิทธิภาพและสวยงาม
-        </p>
-
-        {/* Call to Action */}
-        <Link
-          href={user ? "/alltask" : "/login"}
-          className="group relative inline-flex items-center justify-center px-10 py-4 font-bold text-white transition-all duration-300 bg-blue-600 rounded-2xl hover:bg-blue-700 hover:shadow-xl hover:shadow-blue-500/30 active:scale-95 overflow-hidden"
-        >
-          <span className="relative flex items-center text-lg">
-            {user ? "เข้าใช้งานระบบ" : "เริ่มต้นใช้งาน"}
-            <svg className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-          </span>
-        </Link>
-
-        {/* Feature Highlights */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-16 w-full max-w-2xl text-left">
-          <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg shadow-blue-900/5 hover:-translate-y-1 transition-transform">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-4 text-2xl shadow-inner">📝</div>
-            <h3 className="font-bold text-blue-950 mb-1">จดบันทึกง่าย</h3>
-            <p className="text-sm text-slate-500 tracking-wide">เพิ่มและแก้ไขงานได้อย่างรวดเร็ว ไม่ซับซ้อน</p>
+          <section className="planner-home-example" aria-labelledby="example-heading">
+            <h2 id="example-heading">ตัวอย่างรายการงาน</h2>
+            <ul>
+              {exampleRows.map((row) => (
+                <li key={row.title}>
+                  <span className="planner-home-check" data-completed={row.completed} aria-hidden="true">
+                    {row.completed && <PlannerIcon name="check" />}
+                  </span>
+                  <span>{row.title}</span>
+                  <span className="planner-home-status" data-completed={row.completed}>
+                    {row.completed ? "เสร็จแล้ว" : "ยังไม่เสร็จ"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </section>
+        <dl className="planner-home-features">
+          <div>
+            <dt>จดบันทึกงาน</dt>
+            <dd>เพิ่มชื่องานและกลับมาแก้ไขรายละเอียดได้</dd>
           </div>
-          <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg shadow-blue-900/5 hover:-translate-y-1 transition-transform">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-4 text-2xl shadow-inner">🖼️</div>
-            <h3 className="font-bold text-blue-950 mb-1">แนบรูปภาพได้</h3>
-            <p className="text-sm text-slate-500 tracking-wide">อัปโหลดภาพประกอบงานให้ชัดเจนยิ่งขึ้น</p>
+          <div>
+            <dt>แนบรูปภาพ</dt>
+            <dd>เก็บรูปที่เกี่ยวข้องไว้กับงานแต่ละรายการ</dd>
           </div>
-          <div className="bg-white/70 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg shadow-blue-900/5 hover:-translate-y-1 transition-transform">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mb-4 text-2xl shadow-inner">✅</div>
-            <h3 className="font-bold text-blue-950 mb-1">ติดตามสถานะ</h3>
-            <p className="text-sm text-slate-500 tracking-wide">แยกงานที่ทำเสร็จแล้วและยังไม่เสร็จออกจากกัน</p>
+          <div>
+            <dt>ติดตามสถานะ</dt>
+            <dd>เห็นว่างานไหนเสร็จแล้วและงานไหนยังค้างอยู่</dd>
           </div>
-        </div>
-      </div>
-    </main>
+        </dl>
+      </main>
+    </div>
   );
 }

@@ -1,283 +1,68 @@
 "use client";
 
-import Image from "next/image";
-import Task from "@/assets/task.png";
-import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { TaskEditor, TaskForm } from "@/app/components/task-form";
+import { PlannerNotice } from "@/app/components/planner-ui";
 import { supabase } from "@/lib/supabaseClient";
-import { useRouter, useParams } from "next/navigation"; // เปลี่ยนจาก "next/router" เป็น "next/navigation"
+import { normalizeTask, readTaskSession, type Task } from "@/lib/tasks";
 
-export default function Page() {
+export default function EditTaskPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const id = useParams().id; // ดึง id จากพารามิเตอร์ของ URL
+  const [result, setResult] = useState<{ id: string; task: Omit<Task, "created_at"> | null } | null>(null);
+  const [retry, setRetry] = useState(0);
 
-  const [title, setTitle] = useState<string>("");
-  const [detail, setDetail] = useState<string>("");
-  const [is_completed, setIsCompleted] = useState<boolean>(false);
-  const [image_file, setImageFile] = useState<File | null>(null);
-  const [preview_file, setPreviewFile] = useState<string>("");
-  const [old_image_file, setOldImageFile] = useState<string>("");
-
-  // ดึงข้อมูลงานเก่าจากฐานข้อมูลมาแสดง ตาม id ที่ส่งมา
   useEffect(() => {
-    const fetchData = async () => {
-      const userData = localStorage.getItem("user");
-      if (!userData) {
-        router.push("/login");
-        return;
-      }
-      const user = JSON.parse(userData);
-
-      const { data, error } = await supabase
-        .from("task_tb")
-        .select("*")
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .single();
-
-      if (error) {
-        alert("พบปัญหาในการดึงข้อมูลงานเก่า");
-        console.log(error.message);
-        return;
-      }
-
-      // กรณีดึงข้อมูลสำเร็จ ให้นำข้อมูลมาแสดงในฟอร์ม
-      if (data) {
-        setTitle(data.title);
-        setDetail(data.detail);
-        setIsCompleted(data.is_completed);
-        setPreviewFile(data.image_url);
-        setOldImageFile(data.image_url);
-      }
-    };
-    fetchData();
-  }, [id, router]);
-
-  const handleSelectImagePreview = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setImageFile(file);
-    if (file) {
-      setPreviewFile(URL.createObjectURL(file as Blob));
-    }
-  };
-
-  // บันทึกและแก้ไขข้อมูลฐานข้อมูลที่ supabase
-  const handleUploadAndUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // อัพเดตรูปภาพใหม่ไปยัง Supabase Storage
-    let image_url = preview_file || "";
-    if (image_file) {
-      // ลบรูปภาพเก่าออกจาก Supabase Storage
-      if (old_image_file !== "") {
-        const image_name = old_image_file.split("/").pop(); // ดึงชื่อไฟล์จาก URL
-
-        const { error } = await supabase.storage
-          .from("task_bk")
-          .remove([image_name as string]); // ลบรูปภาพ
-        if (error) {
-          alert("พบปัญหาในการลบรูปภาพ ออกจาก Storage");
-          console.log(error.message);
-          return;
-        }
-      }
-      const new_image_file_name = `${Date.now()}-${image_file.name}`;
-
-      // อัปโหลดรูปภาพไปยัง Supabase Storage
-      const { error } = await supabase.storage
-        .from("task_bk")
-        .upload(new_image_file_name, image_file);
-      if (error) {
-        alert("เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ");
-        console.log(error.message);
-        return;
-      } else {
-        // get url ของรูปภาพที่อัปโหลด
-        const { data } = supabase.storage
-          .from("task_bk")
-          .getPublicUrl(new_image_file_name);
-        image_url = data.publicUrl;
-      }
-    }
-
-    const userData = localStorage.getItem("user");
-    if (!userData) {
-      router.push("/login");
+    const user = readTaskSession();
+    if (!user) {
+      router.replace("/login");
       return;
     }
-    const user = JSON.parse(userData);
 
-    // แก้ไขข้อมูลในตาราง task_tb
-    const { error } = await supabase
-      .from("task_tb")
-      .update({
-        title: title,
-        detail: detail,
-        is_completed: is_completed,
-        image_url: image_url,
-        update_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .eq("user_id", user.id);
+    const request = new AbortController();
+    async function loadTask(userId: string | number) {
+      try {
+        const { data, error } = await supabase
+          .from("task_tb")
+          .select("*")
+          .eq("id", id)
+          .eq("user_id", userId)
+          .abortSignal(request.signal)
+          .single();
+        if (request.signal.aborted) return;
+        if (error) throw error;
 
-    if (error) {
-      alert("เกิดข้อผิดพลาดในการบันทึกการแก้ไขข้อมูล");
-      console.log(error.message);
-      return;
-    } else {
-      alert("บันทึกแก้ไขข้อมูลเรียบร้อย");
-      setTitle("");
-      setDetail("");
-      setIsCompleted(false);
-      setImageFile(null);
-      setPreviewFile("");
-      image_url = "";
-      router.push("/alltask");
+        setResult({ id, task: normalizeTask(data) });
+      } catch {
+        if (!request.signal.aborted) setResult({ id, task: null });
+      }
     }
-  };
+
+    void loadTask(user.id);
+    return () => request.abort();
+  }, [id, retry, router]);
+
+  const current = result?.id === id ? result : null;
+  if (current?.task) return <TaskForm key={id} task={current.task} />;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center font-sans tracking-wide">
-      <div className="w-full max-w-2xl">
-        {/* Header Section */}
-        <div className="flex flex-col items-center mb-10 text-center">
-          <div className="relative w-24 h-24 mb-6 rounded-full bg-white shadow-xl shadow-blue-500/10 flex items-center justify-center border border-blue-50">
-            <Image src={Task} alt="Task" width={64} height={64} className="object-contain drop-shadow-sm" priority />
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-blue-950 tracking-tight mb-2">
-            Manage Task App
-          </h1>
-          <p className="text-blue-600/80 font-medium text-lg">บันทึกงานที่ต้องทำ</p>
+    <TaskEditor title="แก้ไขงาน">
+      {!current ? (
+        <div className="planner-loading" role="status">
+          <span>กำลังโหลดข้อมูลงาน…</span>
+          <div aria-hidden="true" />
+          <div aria-hidden="true" />
         </div>
-
-        {/* Form Card */}
-        <div className="bg-white rounded-3xl shadow-2xl shadow-blue-900/5 border border-blue-100/50 overflow-hidden backdrop-blur-sm">
-          <div className="px-6 py-8 sm:p-10">
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-blue-50">
-              <h2 className="text-2xl font-bold text-blue-900">แก้ไขงานเก่า</h2>
-              <div className="px-3 py-1 bg-amber-100 text-amber-700 text-sm font-semibold rounded-full">Edit Task</div>
-            </div>
-
-            <form onSubmit={handleUploadAndUpdate} className="space-y-6">
-              {/* Title Input */}
-              <div className="flex flex-col space-y-2">
-                <label className="text-sm font-bold text-blue-900 ml-1" htmlFor="title">
-                  งานที่ทำ <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="title"
-                  type="text"
-                  required
-                  placeholder="เช่น ทำรายงาน, ซื้อของ..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-blue-950 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none shadow-sm"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-
-              {/* Detail Input */}
-              <div className="flex flex-col space-y-2">
-                <label className="text-sm font-bold text-blue-900 ml-1" htmlFor="detail">
-                  รายละเอียดงาน
-                </label>
-                <textarea
-                  id="detail"
-                  rows={4}
-                  placeholder="อธิบายรายละเอียดของงานนี้เพิ่มเติม..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-blue-950 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none shadow-sm resize-none"
-                  value={detail}
-                  onChange={(e) => setDetail(e.target.value)}
-                />
-              </div>
-
-              {/* Image Upload */}
-              <div className="flex flex-col space-y-2">
-                <label className="text-sm font-bold text-blue-900 ml-1">
-                  รูปภาพประกอบ
-                </label>
-                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                  <input
-                    id="fileInput"
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleSelectImagePreview}
-                  />
-                  <label
-                    htmlFor="fileInput"
-                    className="inline-flex items-center justify-center px-6 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-xl cursor-pointer transition-colors duration-200 border border-blue-200/50 shadow-sm"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    อัปโหลดรูปภาพใหม่
-                  </label>
-                  
-                  {preview_file && (
-                    <div className="relative group">
-                      <div className="w-24 h-24 rounded-xl overflow-hidden border-2 border-blue-100 shadow-md">
-                        <Image
-                          src={preview_file}
-                          alt="preview"
-                          className="w-full h-full object-cover"
-                          width={96}
-                          height={96}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Status Select */}
-              <div className="flex flex-col space-y-2">
-                <label htmlFor="status" className="text-sm font-bold text-blue-900 ml-1">
-                  สถานะงาน
-                </label>
-                <div className="relative">
-                  <select
-                    id="status"
-                    className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-blue-950 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none shadow-sm cursor-pointer"
-                    value={is_completed ? "1" : "0"}
-                    onChange={(e) => setIsCompleted(e.target.value === "1")}
-                  >
-                    <option value="0">⏳ ยังไม่เสร็จสิ้น</option>
-                    <option value="1">✅ เสร็จสิ้นแล้ว</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-blue-500">
-                    <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl py-4 shadow-lg shadow-blue-500/30 transition-all duration-200 active:scale-[0.98] flex justify-center items-center"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  บันทึกแก้ไขงาน
-                </button>
-              </div>
-            </form>
-          </div>
-          
-          {/* Footer Link */}
-          <div className="bg-slate-50/50 px-6 py-6 border-t border-slate-100 sm:px-10 flex justify-center">
-            <Link 
-              href="/" 
-              className="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold transition-colors duration-200 group"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 transform group-hover:-translate-x-1 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              กลับไปหน้าแรก
-            </Link>
-          </div>
+      ) : (
+        <div className="planner-list-state">
+          <PlannerNotice error>เปิดงานนี้ไม่สำเร็จ งานอาจถูกลบไปแล้ว</PlannerNotice>
+          <button className="planner-button planner-secondary" type="button" onClick={() => {
+            setResult(null);
+            setRetry((value) => value + 1);
+          }}>ลองอีกครั้ง</button>
         </div>
-      </div>
-    </main>
+      )}
+    </TaskEditor>
   );
 }

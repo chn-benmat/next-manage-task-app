@@ -1,0 +1,167 @@
+/* Hallmark · theme: Hum · public home and registration · v2.0.0 */
+/* Hallmark · extend the planner with its own checklist preview and shared account form. */
+
+.planner-home-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.planner-home-nav .planner-button {
+  font-size: var(--planner-small);
+}
+
+.planner-home-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 5rem);
+  padding-block: clamp(2.5rem, 7vw, 6rem);
+}
+
+.planner-home-copy .planner-title {
+  max-inline-size: 17ch;
+  text-wrap: balance;
+}
+
+.planner-home-copy p {
+  margin-block: 1rem 1.65rem;
+  max-inline-size: 38ch;
+  font-size: var(--planner-label);
+}
+
+.planner-home-example {
+  border: 1px solid var(--color-pollen-rule);
+  border-radius: var(--planner-sheet);
+  background-color: var(--color-card);
+  box-shadow: 0 5px 0 var(--color-pollen-rule);
+}
+
+.planner-home-example h2 {
+  border-radius: var(--planner-sheet) var(--planner-sheet) 0 0;
+  background-color: var(--color-pollen);
+  padding: 1rem 1.2rem;
+  font-size: var(--planner-section);
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+.planner-home-example li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  border-block-start: 1px solid var(--color-rule);
+  padding: 0.95rem 1.2rem;
+}
+
+.planner-home-check {
+  display: grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: 1.5px solid var(--color-control);
+  border-radius: 0.42rem;
+}
+
+.planner-home-check[data-completed="true"] {
+  border-color: var(--color-success);
+  background-color: var(--color-success-wash);
+  color: var(--color-success);
+}
+
+.planner-home-status {
+  color: var(--color-muted);
+  font-size: var(--planner-small);
+  white-space: nowrap;
+}
+
+.planner-home-status[data-completed="true"] {
+  color: var(--color-success);
+}
+
+.planner-home-features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-block-end: 3rem;
+  border-block-start: 1px solid var(--color-rule);
+  padding-block-start: 1.75rem;
+}
+
+.planner-home-features div + div {
+  border-inline-start: 1px solid var(--color-rule);
+  padding-inline-start: 1rem;
+}
+
+.planner-home-features dt {
+  font-weight: 600;
+}
+
+.planner-home-features dd {
+  margin-block-start: 0.3rem;
+  color: var(--color-muted);
+}
+
+.planner-auth-fields,
+.planner-register-optionals {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+}
+
+.planner-register-optionals {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.planner-file.planner-register-upload {
+  border: 1px solid var(--color-control);
+  padding-inline: 0.7rem;
+}
+
+@media (max-width: 42rem) {
+  .planner-home-intro {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .planner-home-features {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .planner-home-features div + div {
+    border-block-start: 1px solid var(--color-rule);
+    border-inline-start: 0;
+    padding-block-start: 1rem;
+    padding-inline-start: 0;
+  }
+}
+
+@media (max-width: 26rem) {
+  .planner-home .planner-header-inner,
+  .planner-home-nav {
+    gap: 0.35rem;
+  }
+
+  .planner-home .planner-brand {
+    gap: 0.45rem;
+  }
+
+  .planner-home-nav .planner-button {
+    padding-inline: 0.5rem;
+  }
+
+  .planner-home-example :is(h2, li) {
+    padding-inline: 0.85rem;
+  }
+
+  .planner-register-optionals {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 22.5rem) {
+  .planner-home .planner-brand span {
+    display: none;
+  }
+}
